@@ -218,29 +218,30 @@ class WmiChildClass(Base):
                 '''IF THE DEBUG is SET TO on in the wmi.config FILE'''
                 #msg='error IS SET TO logfile IN THE WMI_CHILD_CLASS'
                 self.line_info(class_name="WmiChildClass",msg='constructor initialized')
+                self.cidr=network
+                '''call function to return ip address'''
+                self.return_ip_val=self.return_ip_val(self.cidr)
                 self.av_dbconnection = MySQLBase()
                 self.network = network
                 self.outfile = "/opt/customScripts/wmi_project/output/"
                 self.out_file = ""
                 self.credentials = credentials
-                self.network = network
                 self.read_config_file()
                 self.output = ""
                 self.name = ""
-                '''
-                self.bootdevice = ""
-                self.test_list = ""
-                self.out_put = ""
-                self.ip_in_for_loop = ""
-                '''
-
+                tmp_val=self.bool_ip_in_prefix(self.return_ip_val, self.network)
+                if tmp_val:
+                    self.line_info(msg='YES INFO YES')
+                else:
+                    self.line_info(msg='NO ERROR NO')
+                        
         def set_cmd(self, cmd):
                 #logging.error("in set_cmd method")
                 self.cmd = cmd
                 # logging.debug(cmd)
 
         def wmiscan_no_debug(self, overload=None, val_tmp=None):
-                for ip in IPNetwork(self.network):
+                for ip in IPNetwork(self.cidr):
                         self.ip_in_for_loop = str(ip)
                         self.data = ""
                         self.YES = True
@@ -320,6 +321,7 @@ class WmiChildClass(Base):
                 self.decoding()
 
         def Check_File(self, file):
+            
                 self.outfile = file
                 if os.path.exists(self.outfile):
                     self.line_info(info='os.path.exists for', msg=self.outfile)
@@ -330,6 +332,62 @@ class WmiChildClass(Base):
                 else:
                     self.line_info(info='os.path does not exists for', msg=self.outfile)
                     
+        def ip_to_binary(self,ip):
+                self.ip=ip
+                self.line_info(class_name=str(self.__class__,), info='ip val=' + str(self.ip))
+                self.octet_list_int = self.ip.split(".")
+                self.octet_list_bin = [format(int(i), '08b') for i in self.octet_list_int]
+                self.binary = ("").join(self.octet_list_bin)
+                return self.binary
+
+        def get_addr_network(self,address, net_size):
+                self.address=address
+                self.net_size=net_size
+                self.line_info(class_name=str(self.__class__,), info='address val=' + str(self.address), msg='net_size val=' + str(self.net_size))
+                
+                #Convert ip address to 32 bit binary
+                self.ip_bin = self.ip_to_binary(self.address)
+                
+                #Extract Network ID from 32 binary
+                self.network = self.ip_bin[0:32-(32-self.net_size)]
+                self.line_info(class_name=str(self.__class__,), info='network val=' + str(self.network), msg='ip_bin val=' + str(self.ip_bin))
+                return self.network
+    
+        def bool_ip_in_prefix(self, ip_address , prefix):
+                '''docstring returns a boolean'''
+                self.prefix = prefix
+                self.ip_address=ip_address
+                self.line_info(class_name=str(self.__class__,), info='prefix val=' + str(self.prefix), msg='ip_address val=' + str(self.ip_address))
+                
+                #CIDR based separation of address and network size
+                #[self.prefix_address, self.net_size] = self.prefix.split('/')
+                self.tmp_val = self.prefix.split('/')
+                self.line_info(info='tmp_val= ' + str(self.tmp_val) + ' list len=' + str(len(self.tmp_val)))
+                
+                self.prefix_address = self.tmp_val[0]
+                self.net_size = self.tmp_val[1]
+                
+                #Convert string to int
+                self.net_int = int(self.net_size)
+                self.line_info(info='net_int val=' +str(self.net_int))
+
+                #Get the network ID of both prefix and ip based net size
+                self.prefix_network = self.get_addr_network(self.prefix_address, self.net_int)
+                self.line_info(info='self.prefix_network=',msg=self.prefix_network)
+                
+                self.ip_network = self.get_addr_network(self.ip_address, self.net_int)
+                #self.line_info(info='self.ip_network=', msg=self.ip_network)
+
+                self.line_info(class_name=str(self.__class__), info='net_size val=' + str(self.net_size) 
+                    + 'prefix_network val=' + str(self.prefix_network)  + 'ip_network val=' + str(self.ip_network))
+                
+                return self.ip_network == self.prefix_network
+
+        def return_ip_val(self,prefix):
+                self.prefix=prefix.split('/')
+                self.line_info(class_name=str(self.__class__,), info='prefix val=' + str(self.prefix))
+                return self.prefix[0]
+
 
 def main():
         cidr = str(raw_input("Please enter Network Address in CIDR format\ne.g 192.168.1.0/24\n"))
