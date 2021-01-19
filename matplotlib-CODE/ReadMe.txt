@@ -1,0 +1,2 @@
+All the chapters have code files in their respective folders with the data files as needed.
+Codes from chapter 5 and 6 may crash your Jupyter kernel, if that's the case, copy paste the code from the Jupyter cell to a .py file and run it via the Command Prompt/Terminal.
